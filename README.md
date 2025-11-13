@@ -61,6 +61,7 @@ cmake --build build
 
 # 4. Run
 ./build/ShikaOpenGLRenderer
+```
 
 ---
 
