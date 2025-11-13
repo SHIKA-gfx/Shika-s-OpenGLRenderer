@@ -1,0 +1,16 @@
+# ignore build folders
+build/
+out/
+bin/
+
+# CMake ignore auto generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# VS Code ignore settings files
+.vscode/
+
+# OS system files ignore
+.DS_Store
+Thumbs.db

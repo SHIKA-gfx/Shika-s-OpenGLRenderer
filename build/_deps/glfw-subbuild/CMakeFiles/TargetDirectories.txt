@@ -1,3 +1,0 @@
-/workspaces/Shika-s-OpenGLRenderer/build/_deps/glfw-subbuild/CMakeFiles/glfw-populate.dir
-/workspaces/Shika-s-OpenGLRenderer/build/_deps/glfw-subbuild/CMakeFiles/edit_cache.dir
-/workspaces/Shika-s-OpenGLRenderer/build/_deps/glfw-subbuild/CMakeFiles/rebuild_cache.dir
