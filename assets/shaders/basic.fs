@@ -1,7 +1,12 @@
 #version 330 core
 out vec4 FragColor;
 
+in vec2 TexCoord; // Receive texture coordinates from vertex shader
+
+uniform sampler2D ourTexture; // Texture sampler
+
 void main()
 {
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); // Orange
+    // texture function, fetch the color from the texture using the texture coordinates
+    FragColor = texture(ourTexture, TexCoord);
 }

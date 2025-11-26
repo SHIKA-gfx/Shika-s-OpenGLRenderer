@@ -1,10 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "stb_image.h" // [NEW] Image Loading Library
+#include "Shader.h" 
 #include <iostream>
 
-// [NEW] Include My shader class header
-// Since the include folder is added to the path in CMakeLists.txt, it can be found directly.
-#include "Shader.h"
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -31,15 +30,15 @@ int main() {
         return -1;
     }
 
-    // [NEW] Use shader class
     // Note: The path should be based on the executable location.
     Shader ourShader("assets/shaders/basic.vs", "assets/shaders/basic.fs");
 
-    // 3. Set up triangle data (VBO, VAO)
+    // 2. Data Setup (Location XYZ + Texture UV)
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+        // positions         // texture coords 
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right
+         0.5f,  0.5f, 0.0f,  0.5f, 1.0f, // top right
     };
 
     unsigned int VBO, VAO;
@@ -51,20 +50,53 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // attribute setup for positon (Stride Changed to 5 * sizeof(float)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
-    glBindVertexArray(0); 
+    // attribute setup for texture coordinates
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
-    // 4. Render loop
+    // 3. Load and create a texture
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture); // Bind texture
+
+    // Set texture wrapping/filtering options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Load image
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true); // Flip image on load (OpenGL expects 0.0 at bottom)
+
+    // Provide the correct path to your image file
+    unsigned char *data = stbi_load("assets/textures/container.jpg", &width, &height, &nrChannels, 0);
+    
+    if (data) 
+    {
+        // Send image data to GPU
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D); // Generate mipmaps
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data); // Free image memory (because it's now on GPU)
+
+    // 4. Render Loop
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // [NEW] Use shader
+        // Bind Texture
+        glBindTexture(GL_TEXTURE_2D, texture);
+
         ourShader.use();
-        
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -74,7 +106,8 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    
+    glDeleteProgram(ourShader.ID);
+
     glfwTerminate();
     return 0;
 }
