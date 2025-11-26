@@ -1,6 +1,10 @@
+#include <glm/glm.hpp> // [NEW] GLM Mathematics Library
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "stb_image.h" // [NEW] Image Loading Library
+#include "stb_image.h" 
 #include "Shader.h" 
 #include <iostream>
 
@@ -90,13 +94,33 @@ int main() {
 
     // 4. Render Loop
     while (!glfwWindowShouldClose(window)) {
+
+        // Clear Screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Bind Texture
         glBindTexture(GL_TEXTURE_2D, texture);
-
+ 
+        // Activate Shader
         ourShader.use();
+
+        // [NEW] Create Transformation Matrix
+        glm::mat4 transform = glm::mat4(1.0f); // Identity
+
+        // 1. move : move right and down
+        // transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+
+        // 2. rotate : rotate over time
+        // (float)glfwGetTime() gets time in seconds since GLFW started
+        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        // [NEW] Send Transformation Matrix to Shader
+        // "transform" must match the name in the vertex shader
+        unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
+        // Draw
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
