@@ -2,15 +2,31 @@
 #include <GLFW/glfw3.h>
 #include "stb_image.h" 
 #include "Shader.h" 
+#include "Camera.h" // [NEW] Include Camera header
 #include <iostream>
 
 #include <glm/glm.hpp> 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// [NEW] Function Prototypes
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void processInput(GLFWwindow *window);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// [New] Create Camera object (positioned at (0,0,3))
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+// [NEW] Timing Functions (for consistent movement speed across different hardware)
+float deltaTime = 0.0f; // time between current frame and last frame
+float lastFrame = 0.0f; // time of last frame
 
 int main() {
     // 1. Initialization
@@ -22,19 +38,26 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Shika 3D Cube", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Shika FPS Camera", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
 
+    // [NEW] Set Callbacks (mouse and scroll)
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+
+    // [NEW] Capture the mouse
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // [Important] Enable Z-buffer(depth test)
     // for recognizing which object is in front of another
     glEnable(GL_DEPTH_TEST);
 
@@ -134,10 +157,17 @@ int main() {
     stbi_image_free(data); // Free image memory (because it's now on GPU)
 
     ourShader.use();
-    ourShader.setInt("texture1", 0); // Set texture unit 0
+    ourShader.setInt("ourTexture", 0); // Set texture unit 0
 
     // 4. Render Loop
     while (!glfwWindowShouldClose(window)) {
+        // [NEW] Calculate deltaTime
+        float currentFrame = (float)glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // [NEW] Process Input
+        processInput(window);
 
         // Clear Depth and Color Buffers
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -150,28 +180,20 @@ int main() {
         // Activate Shader
         ourShader.use();
 
-        // 1) Model : Rotate the cube over time, XYZ axis
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        // 1) Projection: Use FOV (Enable Zooming)
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        // 2) View: Recieve view matrix from Camera class
+        glm::mat4 view = camera.GetViewMatrix();
+        // 3) Model
+        glm::mat4 model = glm::mat4(1.0f); 
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        // 2) View : Move 3 units back on Z axis (for watching the scene)
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
-        // 3) Projection : perspective projection(45 degree, aspect ratio, 0.1~100 depth)
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        // Send matrices to the shader
-        unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        unsigned int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-        unsigned int projLoc = glGetUniformLocation(ourShader.ID, "projection");
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        ourShader.setMat4("projection", projection);
+        glUniformMatrix4fv(glGetUniformLocation(ourShader.ID, "projection"), 1, GL_FALSE, &projection[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(ourShader.ID, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(ourShader.ID, "model"), 1, GL_FALSE, &model[0][0]);
 
         glBindVertexArray(VAO);
-        // Draw the cube(36 vertices)
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
@@ -184,4 +206,53 @@ int main() {
 
     glfwTerminate();
     return 0;
+}
+
+// [NEW] Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    // Camera controls with WASD keys
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+// [NEW] GLFW: whenever the window size changed (by OS or user resize) this callback function executes
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+// [NEW] GLFW: whenever the mouse moves, this callback is called
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = (float)xpos;
+        lastY = (float)ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = (float)(xpos - lastX);
+    float yoffset = (float)(lastY - ypos); // reversed since y-coordinates go from bottom to top
+
+    lastX = (float)xpos;
+    lastY = (float)ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+
+}
+
+// [NEW] GLFW: whenever the mouse scroll wheel scrolls, this callback is called
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll((float)yoffset);
 }
