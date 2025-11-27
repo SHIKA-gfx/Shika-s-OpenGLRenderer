@@ -1,12 +1,12 @@
-#include <glm/glm.hpp> // [NEW] GLM Mathematics Library
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "stb_image.h" 
 #include "Shader.h" 
 #include <iostream>
+
+#include <glm/glm.hpp> 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 
 const unsigned int SCR_WIDTH = 800;
@@ -22,7 +22,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Shika OpenGL Refactored", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Shika 3D Cube", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return -1;
@@ -34,15 +34,56 @@ int main() {
         return -1;
     }
 
+    // [Important] Enable Z-buffer(depth test)
+    // for recognizing which object is in front of another
+    glEnable(GL_DEPTH_TEST);
+
     // Note: The path should be based on the executable location.
     Shader ourShader("assets/shaders/basic.vs", "assets/shaders/basic.fs");
 
-    // 2. Data Setup (Location XYZ + Texture UV)
+    // 2. Cube Data (36 vertices : location + UV)
     float vertices[] = {
-        // positions         // texture coords 
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right
-         0.5f,  0.5f, 0.0f,  0.5f, 1.0f, // top right
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
     unsigned int VBO, VAO;
@@ -92,37 +133,46 @@ int main() {
     }
     stbi_image_free(data); // Free image memory (because it's now on GPU)
 
+    ourShader.use();
+    ourShader.setInt("texture1", 0); // Set texture unit 0
+
     // 4. Render Loop
     while (!glfwWindowShouldClose(window)) {
 
-        // Clear Screen
+        // Clear Depth and Color Buffers
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
         // Bind Texture
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
  
         // Activate Shader
         ourShader.use();
 
-        // [NEW] Create Transformation Matrix
-        glm::mat4 transform = glm::mat4(1.0f); // Identity
+        // 1) Model : Rotate the cube over time, XYZ axis
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        // 1. move : move right and down
-        // transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+        // 2) View : Move 3 units back on Z axis (for watching the scene)
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
-        // 2. rotate : rotate over time
-        // (float)glfwGetTime() gets time in seconds since GLFW started
-        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        // 3) Projection : perspective projection(45 degree, aspect ratio, 0.1~100 depth)
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-        // [NEW] Send Transformation Matrix to Shader
-        // "transform" must match the name in the vertex shader
-        unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        // Send matrices to the shader
+        unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
+        unsigned int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+        unsigned int projLoc = glGetUniformLocation(ourShader.ID, "projection");
 
-        // Draw
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // Draw the cube(36 vertices)
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

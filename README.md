@@ -18,7 +18,7 @@ This project demonstrates the implementation of the graphics pipeline, shader ma
 - [x] **Window Management**: GLFW integration with cross-platform support.
 - [x] **OpenGL Loading**: GLAD integration for managing function pointers.
 - [x] **Rendering Pipeline**: Basic triangle rendering & VBO/VAO/EBO abstraction.
-- [ ] **Shaders**: Shader class implementation (Vertex & Fragment).
+- [x] **Shaders**: Shader class implementation (Vertex & Fragment).
 - [ ] **Camera System**: FPS style camera movement.
 - [ ] **Lighting**: Phong lighting model implementation.
 - [ ] **Model Loading**: Mesh loading via Assimp.
