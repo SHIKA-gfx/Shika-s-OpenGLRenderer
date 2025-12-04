@@ -30,7 +30,7 @@ bool firstMouse = true;
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f; // time of last frame
 
-// [NEW] Light position
+// Light position
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main() {
@@ -66,7 +66,7 @@ int main() {
     // for recognizing which object is in front of another
     glEnable(GL_DEPTH_TEST);
 
-    // [NEW] Road two Shaders
+    // Road two Shaders
     Shader lightingShader("assets/shaders/colors.vs", "assets/shaders/colors.fs");
     Shader lightCubeShader("assets/shaders/light_cube.vs", "assets/shaders/light_cube.fs");
 
@@ -125,10 +125,10 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glBindVertexArray(cubeVAO);
-    // [NEW] Location attribute
+    // Location attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // [NEW] Normal attribute
+    // Normal attribute
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -161,11 +161,20 @@ int main() {
         // Draw the main cube
         // ----------------------------
         lightingShader.use();
-        lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        
+        // [NEW] Set light properties
+        lightingShader.setVec3("light.position", lightPos.x, lightPos.y, lightPos.z);
+        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f); // Low ambient light
+        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // Moderate diffuse light
+        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f); // Bright specular light
 
-        // [NEW] additional information send for lighting calculates
-        lightingShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+        // [NEW] Set material properties
+        // Search on Web for "OpenGL material properties"
+        lightingShader.setVec3("material.ambient", 0.0215f, 0.1745f, 0.0215f);
+        lightingShader.setVec3("material.diffuse", 0.07568f, 0.61424f, 0.07568f);
+        lightingShader.setVec3("material.specular", 0.633f, 0.727811f, 0.633f);
+        lightingShader.setFloat("material.shineness", 0.6f * 128.0f); // value for shineness
+
         lightingShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
         
         // Send Model, View, Projection matrices to the shader
