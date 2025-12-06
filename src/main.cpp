@@ -26,6 +26,20 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// [NEW] 10 Cubes positions
+glm::vec3 cubePositions[] = {
+    glm::vec3( 0.0f,  0.0f, 0.0f),
+    glm::vec3( 2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3( 2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f, 3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f, 0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
 // Timing Functions (for consistent movement speed across different hardware)
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f; // time of last frame
@@ -169,7 +183,7 @@ int main() {
     // Normal attribute (3 floats after position)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // [NEW] Texture coord attribute (6 floats after position)
+    // Texture coord attribute (6 floats after position)
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
@@ -207,13 +221,18 @@ int main() {
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
         // ----------------------------
-        // Draw the main cube
+        // Draw the main cube 
         // ----------------------------
         lightingShader.use();
         
         // Set light properties
         lightingShader.setVec3("light.position", lightPos.x, lightPos.y, lightPos.z);
         lightingShader.setVec3("viewPos", camera.Position.x, camera.Position.y, camera.Position.z);
+
+        // [NEW] Set light attenuation factors
+        lightingShader.setFloat("light.constant", 1.0f);
+        lightingShader.setFloat("light.linear", 0.09f);
+        lightingShader.setFloat("light.quadratic", 0.032f);
 
         lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f); // Low ambient light
         lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // Moderate diffuse light
@@ -239,8 +258,18 @@ int main() {
         glm::mat4 model = glm::mat4(1.0f);
         lightingShader.setMat4("model", model);
 
+        // [NEW] Draw 10 cubes with different transformations
         glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for(unsigned int i = 0; i < 10; i++){
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            // Rotate each cube over time
+            model = glm::rotate(model, glm::radians(angle) + (float)glfwGetTime(), glm::vec3(1.0f, 0.3f, 0.5f));
+            lightingShader.setMat4("model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         //----------------------------
         // Draw the light cube
