@@ -5,6 +5,8 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![OpenGL](https://img.shields.io/badge/OpenGL-3.3-red.svg)
 
+## [日本語版はこちらへ](https://github.com/SHIKAph/Shika-s-OpenGLRenderer/blob/main/README.ja.md)
+
 **ShikaOpenGLRenderer** is a custom-built 3D rendering engine based on OpenGL 3.3 Core Profile.  
 This project demonstrates the implementation of the graphics pipeline, shader management, and modern C++ architecture without relying on heavy game engines.
 
@@ -38,7 +40,7 @@ This project demonstrates the implementation of the graphics pipeline, shader ma
 ## 📦 How to Build
 
 This project uses **CMake** to manage dependencies automatically. You don't need to manually install libraries.
-햐
+
 ### Prerequisites
 * CMake 3.14 or higher
 * C++ Compiler (GCC, Clang, or MSVC)
