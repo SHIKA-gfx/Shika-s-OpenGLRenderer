@@ -8,8 +8,6 @@
 **ShikaOpenGLRenderer** is a custom-built 3D rendering engine based on OpenGL 3.3 Core Profile.  
 This project demonstrates the implementation of the graphics pipeline, shader management, and modern C++ architecture without relying on heavy game engines.
 
-> **Note:** This project is currently **Work in Progress (WIP)**.
-
 ---
 
 ## 🚀 Features & Roadmap
@@ -21,7 +19,7 @@ This project demonstrates the implementation of the graphics pipeline, shader ma
 - [x] **Shaders**: Shader class implementation (Vertex & Fragment).
 - [x] **Camera System**: FPS style camera movement.
 - [x] **Lighting**: Phong lighting model implementation.
-- [ ] **Model Loading**: Mesh loading via Assimp.
+- [x] **Model Loading**: Mesh loading via Assimp.
 
 ---
 
@@ -40,7 +38,7 @@ This project demonstrates the implementation of the graphics pipeline, shader ma
 ## 📦 How to Build
 
 This project uses **CMake** to manage dependencies automatically. You don't need to manually install libraries.
-
+햐
 ### Prerequisites
 * CMake 3.14 or higher
 * C++ Compiler (GCC, Clang, or MSVC)
